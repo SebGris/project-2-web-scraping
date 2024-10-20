@@ -76,7 +76,7 @@ if category_response.ok:
     maximum_page = int(range_page.text.split("of")[-1].strip())
 else:
     print(f"Erreur : cette catégorie n'existe pas ({category_response})")
-print(f"Number of pages in the category : {maximum_page}")
+print(f"Nombre de pages dans la catégorie : {maximum_page}")
 url_books_for_one_category = []
 for number in range(1, maximum_page +1):
     url_books_for_one_category += extract_book_urls(
@@ -84,11 +84,11 @@ for number in range(1, maximum_page +1):
     )
 books_informations = []
 for url in url_books_for_one_category:
-    print(f"Reading the page {url}")
+    print(f"Lecture de la page : {url}")
     books_informations.append(get_book_informations_from(url))
 
 
-### Export to csv file
+### Create directories for export on Desktop
 desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
 project_path = os.path.join(desktop_path, "project_web_scraping")
 images_path = os.path.join(project_path, "images")
@@ -96,15 +96,18 @@ if not os.path.exists(project_path):
     os.makedirs(project_path)
 if not os.path.exists(images_path):
     os.makedirs(images_path)
+
+
+### Export to csv file
 filename = os.path.join(project_path, "books_informations.csv")
 with open(filename, mode="w", encoding="utf-8", newline="") as file:
     writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
     writer.writeheader()
     for book_informations in books_informations:
-        print(f"writing in the csv file of this book : {book_informations["title"]}")
+        print(f"Ecriture dans le csv des informations du livre : {book_informations["title"]}")
         writer.writerow(book_informations)
         save_image_from_url(
             urlparse.urljoin(HOME_URL, book_informations["image_url"]),
             os.path.join(images_path, book_informations["image_url"].rsplit("/")[-1]),
         )
-print(f"Data successfully written to {filename}")
+print(f"Les données ont été écrites avec succès dans : {filename}")
