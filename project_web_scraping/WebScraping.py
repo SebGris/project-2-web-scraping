@@ -27,39 +27,35 @@ def extract_book_urls(category_page_url):
         print(f"Erreur : cette catégorie n'existe pas ({category_response})")
 
 
-def extract_book_informations(product_page_url, soup: BeautifulSoup):
-    # Gives the first article tag, the one with the comment <!-- Start of product page -->
-    article_tag = soup.find("article")
-    information_rows = soup.find_all("tr")
-    # Check if the product description exists
-    product_description = article_tag.find("div", {"id": "product_description"})
-    text_description = (
-        "" if product_description is None else product_description.find_next("p").text
-    )
-    return {
-        "product_page_url": product_page_url,
-        "universal_product_code": information_rows[0].find("td").text,
-        "title": article_tag.h1.text,
-        "price_including_tax": information_rows[3].find("td").text,
-        "price_excluding_tax": information_rows[2].find("td").text,
-        "number_available": information_rows[5].find("td").text,
-        "product_description": text_description,
-        "category": soup.find("ul", {"class": "breadcrumb"})
-        .find_all("li")[-2]
-        .find("a")
-        .text,
-        "review_rating": article_tag.find("p", {"class": "instock availability"})
-        .find_next("p")
-        .attrs["class"][1],
-        "image_url": article_tag.img.attrs["src"],
-    }
-
-
 def get_book_informations_from(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
         soup = BeautifulSoup(book_response.content, "lxml")
-        return extract_book_informations(book_response.url, soup)
+        # Gives the first article tag, the one with the comment <!-- Start of product page -->
+        article_tag = soup.find("article")
+        information_rows = soup.find_all("tr")
+        # Check if the product description exists
+        product_description = article_tag.find("div", {"id": "product_description"})
+        text_description = (
+            None if product_description is None else product_description.find_next("p").text
+        )
+        return {
+            "product_page_url": book_response.url,
+            "universal_product_code": information_rows[0].find("td").text,
+            "title": article_tag.h1.text,
+            "price_including_tax": information_rows[3].find("td").text,
+            "price_excluding_tax": information_rows[2].find("td").text,
+            "number_available": information_rows[5].find("td").text,
+            "product_description": text_description,
+            "category": soup.find("ul", {"class": "breadcrumb"})
+            .find_all("li")[-2]
+            .find("a")
+            .text,
+            "review_rating": article_tag.find("p", {"class": "instock availability"})
+            .find_next("p")
+            .attrs["class"][1],
+            "image_url": article_tag.img.attrs["src"],
+        }
     else:
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
@@ -77,12 +73,12 @@ category_response = requests.get(category_page_1)
 if category_response.ok:
     soup = BeautifulSoup(category_response.content, "lxml")
     range_page = soup.find("li", {"class": "current"})
-    maximum_page = range_page.text.split("of")[-1].strip()
+    maximum_page = int(range_page.text.split("of")[-1].strip())
 else:
     print(f"Erreur : cette catégorie n'existe pas ({category_response})")
 print(f"Number of pages in the category : {maximum_page}")
 url_books_for_one_category = []
-for number in range(1, int(maximum_page), 1):
+for number in range(1, maximum_page):
     url_books_for_one_category += extract_book_urls(
         get_category_url_by_page_number(category_page_test, number)
     )
