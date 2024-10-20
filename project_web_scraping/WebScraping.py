@@ -11,10 +11,10 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_book_urls_by_category(index_page_of_the_category):
+def extract_urls_books_in_category(index_page_of_the_category):
     category_response = requests.get(index_page_of_the_category)
     if category_response.ok:
-        url_books = extract_book_urls(index_page_of_the_category)
+        url_books = extract_books_urls(index_page_of_the_category)
         soup = BeautifulSoup(category_response.content, "lxml")
         range_page = soup.find("li", {"class": "current"})
         maximum_page = int(
@@ -22,7 +22,7 @@ def extract_book_urls_by_category(index_page_of_the_category):
         )
         print(f"Nombre de pages dans la catégorie : {maximum_page}")
         for page_number in range(2, maximum_page + 1):
-            url_books += extract_book_urls(
+            url_books += extract_books_urls(
                 urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
             )
         return url_books
@@ -30,7 +30,7 @@ def extract_book_urls_by_category(index_page_of_the_category):
         print(f"Erreur : cette catégorie n'existe pas ({category_response})")
 
 
-def extract_book_urls(category_page_url):
+def extract_books_urls(category_page_url):
     category_response = requests.get(category_page_url)
     if category_response.ok:
         soup = BeautifulSoup(category_response.content, "lxml")
@@ -39,7 +39,7 @@ def extract_book_urls(category_page_url):
             for h3 in soup.find_all("h3")  # every link to the book is in an h3
         ]
     else:
-        print(f"Erreur : cette catégorie n'existe pas ({category_response})")
+        print(f"Erreur : cette page de la catégorie n'existe pas ({category_response})")
 
 
 def get_book_informations_from(book_page_url):
@@ -48,7 +48,6 @@ def get_book_informations_from(book_page_url):
         soup = BeautifulSoup(book_response.content, "lxml")
         # Gives the first article tag, the one with the comment <!-- Start of product page -->
         article_tag = soup.find("article")
-        information_rows = soup.find_all("tr")
         # Check if the product description exists
         product_description = article_tag.find("div", {"id": "product_description"})
         text_description = (
@@ -56,6 +55,7 @@ def get_book_informations_from(book_page_url):
             if product_description is None
             else product_description.find_next("p").text
         )
+        information_rows = soup.find_all("tr")
         return {
             "product_page_url": book_response.url,
             "universal_product_code": information_rows[0].td.text,
@@ -86,12 +86,23 @@ def save_image_from_url(image_url, new_filename):
 
 
 ### Main
-category_page_test = urlparse.urljoin(
-    HOME_URL, "/catalogue/category/books/music_14/index.html"
-)
-url_books_for_one_category = extract_book_urls_by_category(category_page_test)
+response = requests.get(HOME_URL)
+if response.ok:
+    soup = BeautifulSoup(response.content, "lxml")
+    categories_url = [
+        urlparse.urljoin(HOME_URL, a["href"])
+        for a in soup.find("ul", {"class": "nav nav-list"})
+        .find("ul")
+        .find_all("a", href=True)
+    ]
+else:
+    print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
+books_url = []
+for category_url in categories_url:
+    print(f"Lecture de la page : {category_url}")
+    books_url += extract_urls_books_in_category(category_url)
 books_informations = []
-for url in url_books_for_one_category:
+for url in books_url:
     print(f"Lecture de la page : {url}")
     books_informations.append(get_book_informations_from(url))
 
