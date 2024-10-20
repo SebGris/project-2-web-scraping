@@ -15,26 +15,16 @@ def get_category_url_by_page_number(category_page, page_number):
     return urlparse.urljoin(category_page, f"page-{page_number}.html")
 
 
-def extract_book_links(soup: BeautifulSoup):
-    return [
-        convert_href_to_book_url(h3.find("a").get("href"))
-        for h3 in soup.find("ol").find_all("h3")
-    ]
-
-
-def extract_book(category_page):
-    category_response = requests.get(category_page)
+def extract_book_urls(category_page_url):
+    category_response = requests.get(category_page_url)
     if category_response.ok:
         soup = BeautifulSoup(category_response.content, "lxml")
-        return extract_book_links(soup)
+        return [
+            urlparse.urljoin(category_page_url, h3.find("a").get("href"))
+            for h3 in soup.find("ol").find_all("h3") # .find("ol") inutile # every link to the book is in an h3 
+        ]
     else:
         print(f"Erreur : cette catégorie n'existe pas ({category_response})")
-
-
-def convert_href_to_book_url(href):
-    return urlparse.urljoin(
-        HOME_URL, "/".join(["catalogue", href.rsplit("/")[-2], "index.html"])
-    )
 
 
 def extract_book_informations(product_page_url, soup: BeautifulSoup):
@@ -93,7 +83,7 @@ else:
 print(f"Number of pages in the category : {maximum_page}")
 url_books_for_one_category = []
 for number in range(1, int(maximum_page), 1):
-    url_books_for_one_category += extract_book(
+    url_books_for_one_category += extract_book_urls(
         get_category_url_by_page_number(category_page_test, number)
     )
 books_informations = []
