@@ -20,8 +20,8 @@ def extract_book_urls(category_page_url):
     if category_response.ok:
         soup = BeautifulSoup(category_response.content, "lxml")
         return [
-            urlparse.urljoin(category_page_url, h3.find("a").get("href"))
-            for h3 in soup.find("ol").find_all("h3") # .find("ol") inutile # every link to the book is in an h3 
+            urlparse.urljoin(category_page_url, h3.a.get("href"))
+            for h3 in soup.find_all("h3") # every link to the book is in an h3 
         ]
     else:
         print(f"Erreur : cette catégorie n'existe pas ({category_response})")
@@ -41,13 +41,13 @@ def get_book_informations_from(book_page_url):
         )
         return {
             "product_page_url": book_response.url,
-            "universal_product_code": information_rows[0].find("td").text,
+            "universal_product_code": information_rows[0].td.text,
             "title": article_tag.h1.text,
-            "price_including_tax": information_rows[3].find("td").text,
-            "price_excluding_tax": information_rows[2].find("td").text,
-            "number_available": information_rows[5].find("td").text,
+            "price_including_tax": information_rows[3].td.text,
+            "price_excluding_tax": information_rows[2].td.text,
+            "number_available": information_rows[5].td.text,
             "product_description": text_description,
-            "category": soup.find("ul", {"class": "breadcrumb"})
+            "category": soup.find("ul", {"class": "breadcrumb"}) # There are two ul tags
             .find_all("li")[-2]
             .find("a")
             .text,
@@ -67,7 +67,7 @@ def save_image_from_url(image_url, new_filename):
 
 
 ### Main
-category_page_test = urlparse.urljoin(HOME_URL, "/catalogue/category/books/default_15/")
+category_page_test = urlparse.urljoin(HOME_URL, "/catalogue/category/books/childrens_11/") # erreur à corriger pour les catégories avec une seule page
 category_page_1 = get_category_url_by_page_number(category_page_test, 1)
 category_response = requests.get(category_page_1)
 if category_response.ok:
@@ -78,7 +78,7 @@ else:
     print(f"Erreur : cette catégorie n'existe pas ({category_response})")
 print(f"Number of pages in the category : {maximum_page}")
 url_books_for_one_category = []
-for number in range(1, maximum_page):
+for number in range(1, maximum_page +1):
     url_books_for_one_category += extract_book_urls(
         get_category_url_by_page_number(category_page_test, number)
     )
