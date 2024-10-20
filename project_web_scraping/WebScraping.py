@@ -11,8 +11,23 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def get_category_url_by_page_number(category_page, page_number):
-    return urlparse.urljoin(category_page, f"page-{page_number}.html")
+def extract_book_urls_by_category(index_page_of_the_category):
+    category_response = requests.get(index_page_of_the_category)
+    if category_response.ok:
+        url_books = extract_book_urls(index_page_of_the_category)
+        soup = BeautifulSoup(category_response.content, "lxml")
+        range_page = soup.find("li", {"class": "current"})
+        maximum_page = int(
+            1 if range_page is None else range_page.text.split("of")[-1].strip()
+        )
+        print(f"Nombre de pages dans la catégorie : {maximum_page}")
+        for page_number in range(2, maximum_page + 1):
+            url_books += extract_book_urls(
+                urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
+            )
+        return url_books
+    else:
+        print(f"Erreur : cette catégorie n'existe pas ({category_response})")
 
 
 def extract_book_urls(category_page_url):
@@ -21,7 +36,7 @@ def extract_book_urls(category_page_url):
         soup = BeautifulSoup(category_response.content, "lxml")
         return [
             urlparse.urljoin(category_page_url, h3.a.get("href"))
-            for h3 in soup.find_all("h3") # every link to the book is in an h3 
+            for h3 in soup.find_all("h3")  # every link to the book is in an h3
         ]
     else:
         print(f"Erreur : cette catégorie n'existe pas ({category_response})")
@@ -37,7 +52,9 @@ def get_book_informations_from(book_page_url):
         # Check if the product description exists
         product_description = article_tag.find("div", {"id": "product_description"})
         text_description = (
-            None if product_description is None else product_description.find_next("p").text
+            None
+            if product_description is None
+            else product_description.find_next("p").text
         )
         return {
             "product_page_url": book_response.url,
@@ -47,7 +64,9 @@ def get_book_informations_from(book_page_url):
             "price_excluding_tax": information_rows[2].td.text,
             "number_available": information_rows[5].td.text,
             "product_description": text_description,
-            "category": soup.find("ul", {"class": "breadcrumb"}) # There are two ul tags
+            "category": soup.find(
+                "ul", {"class": "breadcrumb"}
+            )  # There are two ul tags
             .find_all("li")[-2]
             .find("a")
             .text,
@@ -67,21 +86,10 @@ def save_image_from_url(image_url, new_filename):
 
 
 ### Main
-category_page_test = urlparse.urljoin(HOME_URL, "/catalogue/category/books/childrens_11/") # erreur à corriger pour les catégories avec une seule page
-category_page_1 = get_category_url_by_page_number(category_page_test, 1)
-category_response = requests.get(category_page_1)
-if category_response.ok:
-    soup = BeautifulSoup(category_response.content, "lxml")
-    range_page = soup.find("li", {"class": "current"})
-    maximum_page = int(range_page.text.split("of")[-1].strip())
-else:
-    print(f"Erreur : cette catégorie n'existe pas ({category_response})")
-print(f"Nombre de pages dans la catégorie : {maximum_page}")
-url_books_for_one_category = []
-for number in range(1, maximum_page +1):
-    url_books_for_one_category += extract_book_urls(
-        get_category_url_by_page_number(category_page_test, number)
-    )
+category_page_test = urlparse.urljoin(
+    HOME_URL, "/catalogue/category/books/music_14/index.html"
+)
+url_books_for_one_category = extract_book_urls_by_category(category_page_test)
 books_informations = []
 for url in url_books_for_one_category:
     print(f"Lecture de la page : {url}")
@@ -104,7 +112,9 @@ with open(filename, mode="w", encoding="utf-8", newline="") as file:
     writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
     writer.writeheader()
     for book_informations in books_informations:
-        print(f"Ecriture dans le csv des informations du livre : {book_informations["title"]}")
+        print(
+            f"Ecriture dans le csv des informations du livre : {book_informations["title"]}"
+        )
         writer.writerow(book_informations)
         save_image_from_url(
             urlparse.urljoin(HOME_URL, book_informations["image_url"]),
