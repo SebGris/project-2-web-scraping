@@ -11,6 +11,38 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
+def extract_books_from_categories(categories_url):
+    books_url_by_category = [
+        extract_urls_books_in_category(category_url) for category_url in categories_url
+    ]
+    print(books_url_by_category)
+    books_informations = []
+    for category in books_url_by_category:
+        for book_url in category:
+            print(f"Lecture de la page : {book_url}")
+            books_informations.append(get_book_informations(book_url))
+        export_to_csv_file(books_informations, f"books_info_{page_number}.csv")
+        books_informations.clear()
+
+def export_to_csv_file(books_informations, filename_csv):
+    filename = os.path.join(project_path, filename_csv)
+    with open(filename, mode="w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
+        writer.writeheader()
+        for book_informations in books_informations:
+            print(
+                f"Ecriture dans le csv des informations du livre : {book_informations["title"]}"
+            )
+            writer.writerow(book_informations)
+            save_image_from_url(
+                urlparse.urljoin(HOME_URL, book_informations["image_url"]),
+                os.path.join(
+                    images_path, book_informations["image_url"].rsplit("/")[-1]
+                ),
+            )
+    print(f"Les données ont été écrites avec succès dans : {filename}")
+
+
 def extract_urls_books_in_category(index_page_of_the_category):
     category_response = requests.get(index_page_of_the_category)
     if category_response.ok:
@@ -42,7 +74,7 @@ def extract_books_urls(category_page_url):
         print(f"Erreur : cette page de la catégorie n'existe pas ({category_response})")
 
 
-def get_book_informations_from(book_page_url):
+def get_book_informations(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
         soup = BeautifulSoup(book_response.content, "lxml")
@@ -86,6 +118,13 @@ def save_image_from_url(image_url, new_filename):
 
 
 ### Main
+desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
+project_path = os.path.join(desktop_path, "project_web_scraping")
+images_path = os.path.join(project_path, "images")
+if not os.path.exists(project_path):
+    os.makedirs(project_path)
+if not os.path.exists(images_path):
+    os.makedirs(images_path)
 response = requests.get(HOME_URL)
 if response.ok:
     soup = BeautifulSoup(response.content, "lxml")
@@ -97,38 +136,4 @@ if response.ok:
     ]
 else:
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
-books_url = []
-for category_url in categories_url:
-    print(f"Lecture de la page : {category_url}")
-    books_url += extract_urls_books_in_category(category_url)
-books_informations = []
-for url in books_url:
-    print(f"Lecture de la page : {url}")
-    books_informations.append(get_book_informations_from(url))
-
-
-### Create directories for export on Desktop
-desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
-project_path = os.path.join(desktop_path, "project_web_scraping")
-images_path = os.path.join(project_path, "images")
-if not os.path.exists(project_path):
-    os.makedirs(project_path)
-if not os.path.exists(images_path):
-    os.makedirs(images_path)
-
-
-### Export to csv file
-filename = os.path.join(project_path, "books_informations.csv")
-with open(filename, mode="w", encoding="utf-8", newline="") as file:
-    writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
-    writer.writeheader()
-    for book_informations in books_informations:
-        print(
-            f"Ecriture dans le csv des informations du livre : {book_informations["title"]}"
-        )
-        writer.writerow(book_informations)
-        save_image_from_url(
-            urlparse.urljoin(HOME_URL, book_informations["image_url"]),
-            os.path.join(images_path, book_informations["image_url"].rsplit("/")[-1]),
-        )
-print(f"Les données ont été écrites avec succès dans : {filename}")
+extract_books_from_categories(categories_url)
