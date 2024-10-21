@@ -11,7 +11,7 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_books_from_categories(categories_url):
+def extract_books_from_categories(number):
     books_url_by_category = [
         extract_urls_books_in_category(category_url) for category_url in categories_url
     ]
@@ -21,8 +21,9 @@ def extract_books_from_categories(categories_url):
         for book_url in category:
             print(f"Lecture de la page : {book_url}")
             books_informations.append(get_book_informations(book_url))
-        export_to_csv_file(books_informations, f"books_info_{page_number}.csv")
+        export_to_csv_file(books_informations, "books_info_.csv")
         books_informations.clear()
+
 
 def export_to_csv_file(books_informations, filename_csv):
     filename = os.path.join(project_path, filename_csv)
@@ -136,4 +137,20 @@ if response.ok:
     ]
 else:
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
-extract_books_from_categories(categories_url)
+categories = {}
+for url in categories_url:
+    category = {}
+    category_name = url.split("/")[-2]
+    category["name"] = category_name.split("_")[-2]
+    category["url"] = url
+    categories[category_name.split("_")[-1]] = category
+print(categories)
+for key, value in categories.items():
+    print(f"{key} : {value["name"]}")
+print("99 : Toutes les catégories")
+category_number = input("Entrez le n° de la catégorie à exporter, ou 0 pour quitter : ")
+if category_number == "0":
+    exit()    
+print("Veuillez patienter quelques minutes ...")
+exit()
+extract_books_from_categories(category_number)
