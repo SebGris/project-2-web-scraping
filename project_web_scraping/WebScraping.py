@@ -118,14 +118,20 @@ def save_image_from_url(image_url, new_filename):
         handle.write(response.content)
 
 
+def get_path_on_desktop():
+    desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
+    project_path = os.path.join(desktop_path, "project_web_scraping")
+    if not os.path.exists(project_path):
+        os.makedirs(project_path)
+    return project_path
+
+
 ### Main
-desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
-project_path = os.path.join(desktop_path, "project_web_scraping")
+project_path = get_path_on_desktop()
 images_path = os.path.join(project_path, "images")
-if not os.path.exists(project_path):
-    os.makedirs(project_path)
 if not os.path.exists(images_path):
     os.makedirs(images_path)
+
 response = requests.get(HOME_URL)
 if response.ok:
     soup = BeautifulSoup(response.content, "lxml")
@@ -138,19 +144,18 @@ if response.ok:
 else:
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
 categories = {}
-for url in categories_url:
+for num, url in enumerate(categories_url, start=1):
     category = {}
-    category_name = url.split("/")[-2]
-    category["name"] = category_name.split("_")[-2]
+    category_url_name = url.split("/")[-2]
+    category["name"] = category_url_name.split("_")[-2]
     category["url"] = url
-    categories[category_name.split("_")[-1]] = category
-print(categories)
+    categories[num] = category
 for key, value in categories.items():
     print(f"{key} : {value["name"]}")
-print("99 : Toutes les catégories")
+print("* : Toutes les catégories.")
 category_number = input("Entrez le n° de la catégorie à exporter, ou 0 pour quitter : ")
 if category_number == "0":
-    exit()    
+    exit()
 print("Veuillez patienter quelques minutes ...")
 exit()
 extract_books_from_categories(category_number)
