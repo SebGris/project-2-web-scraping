@@ -99,7 +99,7 @@ def get_book_informations(book_page_url):
             "title": article_tag.h1.text,
             "price_including_tax": information_rows[3].td.text,
             "price_excluding_tax": information_rows[2].td.text,
-            "number_available": regex.search("\d+", information_rows[5].td.text)[0],
+            "number_available": regex.search(r"\d+", information_rows[5].td.text)[0],
             "product_description": text_description,
             "category": soup.find(
                 "ul", {"class": "breadcrumb"}
@@ -139,35 +139,34 @@ if not os.path.exists(images_path):
     os.makedirs(images_path)
 
 response = requests.get(HOME_URL)
-if response.ok:
-    soup = BeautifulSoup(response.content, "lxml")
-    categories_url = [
-        urlparse.urljoin(HOME_URL, a["href"])
-        for a in soup.find("ul", {"class": "nav nav-list"})
-        .find("ul")
-        .find_all("a", href=True)
-    ]
-else:
+if not (response.ok):
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
-categories_by_name = {str(url.split("/")[-2].split("_")[-2]): url for url in categories_url}
+    exit()
+
+soup = BeautifulSoup(response.content, "lxml")
+all_navigable_categories = [
+    (a.text.strip(), urlparse.urljoin(HOME_URL, a["href"]))
+    for a in soup.find("ul", {"class": "nav nav-list"}).find_all("a", href=True)
+]
+all_navigable_categories.sort()
+categories_by_name = {name: url for name, url in all_navigable_categories}
+categories_by_name["Toutes les catégories"] = categories_by_name.pop("Books")
+
+
+### Build menu
 categories_menu = {
     str(index): name for index, name in enumerate(categories_by_name, start=1)
 }
 for key, value in categories_menu.items():
     print(f"{key} : {value}")
-print("99 : pour toutes les catégories")
 print("Choix des catégories à exporter.")
-categories_number = input(
+number_selected_categories = input(
     "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules (entrez 0 pour quitter) : "
 )
-categories_number =  categories_number.split(",")
-if categories_number[0] == "0":
+number_selected_categories = number_selected_categories.split(",")
+if number_selected_categories[0] == "0":
     exit()
-print(categories_number)
-
-categories = {
-    categories_menu[number]: categories_by_name[number].get("url")
-    for number in categories_number
-}
-print(categories)
-extract_books_from_categories(categories)
+name_selected_categories = [categories_menu[key] for key in number_selected_categories]
+selected_categories = [(key, value) for key, value in categories_by_name.items() if key in name_selected_categories]
+print(selected_categories)
+extract_books_from_categories(selected_categories)
