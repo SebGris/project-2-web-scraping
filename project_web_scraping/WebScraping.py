@@ -13,15 +13,14 @@ HOME_URL = "http://books.toscrape.com/"
 
 ### Functions
 def extract_books_from_categories(categories_url):
-    books_url_by_category = [
-        extract_urls_books_in_category(category_url) for category_url in categories_url
-    ]
-    books_informations = []
-    for category in books_url_by_category:
-        for book_url in category:
-            print(f"Lecture de la page : {book_url}")
-            books_informations.append(get_book_informations(book_url))
-        export_to_csv_file(books_informations, "books_info_.csv")
+    for category_url in categories_url:
+        books_url_by_category = extract_urls_books_in_category(category_url)
+        books_informations = []
+        for category in books_url_by_category:
+            for book_url in category:
+                print(f"Lecture de la page : {book_url}")
+                books_informations.append(get_book_informations(book_url))
+            export_to_csv_file(books_informations, "books_info_.csv")
         books_informations.clear()
 
 
@@ -150,22 +149,25 @@ if response.ok:
     ]
 else:
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
-menu_categories = {}
-for num, url in enumerate(categories_url, start=1):
-    category = {}
-    category_url_name = url.split("/")[-2]
-    category["name"] = category_url_name.split("_")[-2]
-    category["url"] = url
-    menu_categories[num] = category
-for key, value in menu_categories.items():
-    print(f"{key} : {value["name"]}")
+categories_by_name = {str(url.split("/")[-2].split("_")[-2]): url for url in categories_url}
+categories_menu = {
+    str(index): name for index, name in enumerate(categories_by_name, start=1)
+}
+for key, value in categories_menu.items():
+    print(f"{key} : {value}")
 print("99 : pour toutes les catégories")
 print("Choix des catégories à exporter.")
 categories_number = input(
     "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules (entrez 0 pour quitter) : "
 )
-categories_number = [int(x) for x in categories_number.split(",")]
+categories_number =  categories_number.split(",")
 if categories_number[0] == "0":
     exit()
-categories_url = [menu_categories[number].get("url") for number in categories_number]
-extract_books_from_categories(categories_url)
+print(categories_number)
+
+categories = {
+    categories_menu[number]: categories_by_name[number].get("url")
+    for number in categories_number
+}
+print(categories)
+extract_books_from_categories(categories)
