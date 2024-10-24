@@ -1,6 +1,5 @@
 import csv
-import os
-import pathlib
+from pathlib import Path
 from urllib import parse as urlparse
 
 import requests
@@ -26,7 +25,7 @@ def extract_books_from_categories(categories):
 
 
 def export_to_csv_file(books_informations, directory, filename_csv):
-    filename = pathlib.PurePath.joinpath(project_path, directory, filename_csv)
+    filename = Path.joinpath(project_path, directory, filename_csv)
     with open(filename, mode="w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
         writer.writeheader()
@@ -37,7 +36,7 @@ def export_to_csv_file(books_informations, directory, filename_csv):
             writer.writerow(book_informations)
             save_image_from_url(
                 urlparse.urljoin(HOME_URL, book_informations["image_url"]),
-                pathlib.PurePath.joinpath(
+                Path.joinpath(
                     images_path, book_informations["image_url"].rsplit("/")[-1]
                 ),
             )
@@ -125,19 +124,10 @@ def save_image_from_url(image_url, new_filename):
         handle.write(response.content)
 
 
-def get_path_on_desktop():
-    desktop_path = pathlib.PurePath.joinpath(pathlib.Path.home(),"Desktop")
-    project_path = pathlib.PurePath.joinpath(desktop_path, "project_web_scraping")
-    if not os.path.exists(project_path):
-        os.makedirs(project_path)
-    return project_path
-
-
 ### Main
-project_path = get_path_on_desktop()
-images_path =  pathlib.PurePath.joinpath(project_path, "images")
-if not os.path.exists(images_path):
-    os.makedirs(images_path)
+project_path = Path.joinpath(Path.home(),"Desktop", "project_web_scraping")
+images_path =  Path.joinpath(project_path, "images")
+images_path.mkdir(parents=True, exist_ok=True)
 
 response = requests.get(HOME_URL)
 if not (response.ok):
