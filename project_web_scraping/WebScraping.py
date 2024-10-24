@@ -48,11 +48,17 @@ def export_to_csv_file(books_informations, filename, images_path):
     print(f"Les données ont été écrites avec succès dans : {filename}")
 
 
+def save_image_from_url(image_url, new_filename):
+    with open(new_filename, "wb") as handle:
+        response = requests.get(image_url)
+        handle.write(response.content)
+
+
 def extract_urls_books_in_category(index_page_of_the_category):
     category_response = requests.get(index_page_of_the_category)
     if category_response.ok:
         url_books = extract_books_urls(index_page_of_the_category)
-        soup = BeautifulSoup(category_response.content, "html.parser")  # lxml
+        soup = BeautifulSoup(category_response.content, "html.parser")
         range_page = soup.find("li", {"class": "current"})
         maximum_page = int(
             1 if range_page is None else range_page.text.split("of")[-1].strip()
@@ -70,7 +76,7 @@ def extract_urls_books_in_category(index_page_of_the_category):
 def extract_books_urls(category_page_url):
     category_response = requests.get(category_page_url)
     if category_response.ok:
-        soup = BeautifulSoup(category_response.content, "lxml")
+        soup = BeautifulSoup(category_response.content, "html.parser")
         return [
             urlparse.urljoin(category_page_url, h3.a.get("href"))
             for h3 in soup.find_all("h3")  # every link to the book is in an h3
@@ -87,7 +93,7 @@ def convert_number_letters_into_number(number_letters):
 def get_book_informations(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
-        soup = BeautifulSoup(book_response.content, "lxml")
+        soup = BeautifulSoup(book_response.content, "html.parser")
         # Gives the first article tag, the one with the comment <!-- Start of product page -->
         article_tag = soup.find("article")
         # Check if the product description exists
@@ -123,12 +129,6 @@ def get_book_informations(book_page_url):
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
 
-def save_image_from_url(image_url, new_filename):
-    with open(new_filename, "wb") as handle:
-        response = requests.get(image_url)
-        handle.write(response.content)
-
-
 ### Main
 project_path = Path.joinpath(Path.home(), "Desktop", "project_web_scraping")
 
@@ -137,7 +137,7 @@ if not (response.ok):
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
     exit()
 
-soup = BeautifulSoup(response.content, "lxml")
+soup = BeautifulSoup(response.content, "html.parser")
 all_navigable_categories = [
     (a.text.strip(), urlparse.urljoin(HOME_URL, a["href"]))
     for a in soup.find("ul", {"class": "nav nav-list"}).find_all("a", href=True)
