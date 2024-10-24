@@ -1,5 +1,6 @@
-import os
 import csv
+import os
+import pathlib
 from urllib import parse as urlparse
 
 import requests
@@ -12,20 +13,20 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_books_from_categories(categories_url):
-    for category_url in categories_url:
+def extract_books_from_categories(categories):
+    for category_name, category_url in categories:
         books_url_by_category = extract_urls_books_in_category(category_url)
         books_informations = []
         for category in books_url_by_category:
             for book_url in category:
                 print(f"Lecture de la page : {book_url}")
                 books_informations.append(get_book_informations(book_url))
-            export_to_csv_file(books_informations, "books_info_.csv")
+            export_to_csv_file(books_informations, category_name, "books_info_.csv")
         books_informations.clear()
 
 
-def export_to_csv_file(books_informations, filename_csv):
-    filename = os.path.join(project_path, filename_csv)
+def export_to_csv_file(books_informations, directory, filename_csv):
+    filename = pathlib.PurePath.joinpath(project_path, directory, filename_csv)
     with open(filename, mode="w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
         writer.writeheader()
@@ -36,7 +37,7 @@ def export_to_csv_file(books_informations, filename_csv):
             writer.writerow(book_informations)
             save_image_from_url(
                 urlparse.urljoin(HOME_URL, book_informations["image_url"]),
-                os.path.join(
+                pathlib.PurePath.joinpath(
                     images_path, book_informations["image_url"].rsplit("/")[-1]
                 ),
             )
@@ -125,8 +126,8 @@ def save_image_from_url(image_url, new_filename):
 
 
 def get_path_on_desktop():
-    desktop_path = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
-    project_path = os.path.join(desktop_path, "project_web_scraping")
+    desktop_path = pathlib.PurePath.joinpath(pathlib.Path.home(),"Desktop")
+    project_path = pathlib.PurePath.joinpath(desktop_path, "project_web_scraping")
     if not os.path.exists(project_path):
         os.makedirs(project_path)
     return project_path
@@ -134,7 +135,7 @@ def get_path_on_desktop():
 
 ### Main
 project_path = get_path_on_desktop()
-images_path = os.path.join(project_path, "images")
+images_path =  pathlib.PurePath.joinpath(project_path, "images")
 if not os.path.exists(images_path):
     os.makedirs(images_path)
 
@@ -168,5 +169,4 @@ if number_selected_categories[0] == "0":
     exit()
 name_selected_categories = [categories_menu[key] for key in number_selected_categories]
 selected_categories = [(key, value) for key, value in categories_by_name.items() if key in name_selected_categories]
-print(selected_categories)
 extract_books_from_categories(selected_categories)
