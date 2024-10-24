@@ -14,18 +14,23 @@ HOME_URL = "http://books.toscrape.com/"
 ### Functions
 def extract_books_from_categories(categories):
     for category_name, category_url in categories:
-        books_url_by_category = extract_urls_books_in_category(category_url)
+        url_of_the_books = extract_urls_books_in_category(category_url)
         books_informations = []
-        for category in books_url_by_category:
-            for book_url in category:
-                print(f"Lecture de la page : {book_url}")
-                books_informations.append(get_book_informations(book_url))
-            export_to_csv_file(books_informations, category_name, "books_info_.csv")
+        for book_url in url_of_the_books:
+            books_informations.append(get_book_informations(book_url))
+        category_path = Path.joinpath(project_path, category_name)
+        category_path.mkdir(parents=True, exist_ok=True)
+        images_path = Path.joinpath(category_path, "images")
+        images_path.mkdir(parents=True, exist_ok=True)
+        export_to_csv_file(
+            books_informations,
+            Path.joinpath(category_path, "books_info_.csv"),
+            images_path,
+        )
         books_informations.clear()
 
 
-def export_to_csv_file(books_informations, directory, filename_csv):
-    filename = Path.joinpath(project_path, directory, filename_csv)
+def export_to_csv_file(books_informations, filename, images_path):
     with open(filename, mode="w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
         writer.writeheader()
@@ -125,9 +130,7 @@ def save_image_from_url(image_url, new_filename):
 
 
 ### Main
-project_path = Path.joinpath(Path.home(),"Desktop", "project_web_scraping")
-images_path =  Path.joinpath(project_path, "images")
-images_path.mkdir(parents=True, exist_ok=True)
+project_path = Path.joinpath(Path.home(), "Desktop", "project_web_scraping")
 
 response = requests.get(HOME_URL)
 if not (response.ok):
@@ -158,5 +161,9 @@ number_selected_categories = number_selected_categories.split(",")
 if number_selected_categories[0] == "0":
     exit()
 name_selected_categories = [categories_menu[key] for key in number_selected_categories]
-selected_categories = [(key, value) for key, value in categories_by_name.items() if key in name_selected_categories]
+selected_categories = [
+    (key, value)
+    for key, value in categories_by_name.items()
+    if key in name_selected_categories
+]
 extract_books_from_categories(selected_categories)
