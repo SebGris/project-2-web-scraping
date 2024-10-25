@@ -31,8 +31,8 @@ def extract_books_from_categories(categories):
 
 
 def export_to_csv_file(books_informations, filename, images_path):
-    with open(filename, mode="w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";")
+    with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
+        writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";",quotechar="'")
         writer.writeheader()
         for book_informations in books_informations:
             print(
