@@ -26,7 +26,10 @@ def extract_books_from_categories(categories):
         current_date = datetime.now().strftime("%Y-%m-%d")
         export_to_csv_file(
             books_informations,
-            Path.joinpath(category_path, f"{current_date}_category_{category_name}_book_information.csv"),
+            Path.joinpath(
+                category_path,
+                f"{current_date}_category_{category_name}_book_information.csv",
+            ),
             images_path,
         )
         books_informations.clear()
@@ -34,17 +37,21 @@ def extract_books_from_categories(categories):
 
 def export_to_csv_file(books_informations, filename, images_path):
     with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
-        writer = csv.DictWriter(file, books_informations[0].keys(), delimiter=";",quotechar="'")
+        writer = csv.DictWriter(
+            file, books_informations[0].keys(), delimiter=";", quotechar='"'
+        )
         writer.writeheader()
         for book_informations in books_informations:
             print(
                 f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
             )
             writer.writerow(book_informations)
+            old_name_image = Path(book_informations["image_url"]).stem
             save_image_from_url(
                 urlparse.urljoin(HOME_URL, book_informations["image_url"]),
                 Path.joinpath(
-                    images_path, book_informations["image_url"].rsplit("/")[-1]
+                    images_path,
+                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}_{old_name_image}.jpg',
                 ),
             )
     print(f"Les données ont été écrites avec succès dans : {filename}")
@@ -132,7 +139,7 @@ def get_book_informations(book_page_url):
 
 
 ### Main
-project_path = Path.joinpath(Path.home(), "Desktop", "project_web_scraping")
+project_path = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
 
 response = requests.get(HOME_URL)
 if not (response.ok):
@@ -151,7 +158,7 @@ categories_by_name["Toutes les catégories"] = categories_by_name.pop("Books")
 
 ### Build menu
 categories_menu = {
-    str(index): name for index, name in enumerate(categories_by_name, start=1)
+    index: name for index, name in enumerate(categories_by_name, start=1)
 }
 for key, value in categories_menu.items():
     print(f"{key} : {value}")
@@ -159,9 +166,11 @@ print("Choix des catégories à exporter.")
 number_selected_categories = input(
     "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules (entrez 0 pour quitter) : "
 )
-number_selected_categories = number_selected_categories.split(",")
-if number_selected_categories[0] == "0":
+number_selected_categories = [int(x) for x in number_selected_categories.split(",")]
+if number_selected_categories[0] == 0:
     exit()
+if number_selected_categories[0] == len(categories_menu):
+    number_selected_categories = list(range(1, len(categories_menu)))
 name_selected_categories = [categories_menu[key] for key in number_selected_categories]
 selected_categories = [
     (key, value)
