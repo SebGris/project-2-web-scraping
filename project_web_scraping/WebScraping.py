@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 from pathlib import Path
 from urllib import parse as urlparse
 
@@ -22,9 +23,10 @@ def extract_books_from_categories(categories):
         category_path.mkdir(parents=True, exist_ok=True)
         images_path = Path.joinpath(category_path, "images")
         images_path.mkdir(parents=True, exist_ok=True)
+        current_date = datetime.now().strftime("%Y-%m-%d")
         export_to_csv_file(
             books_informations,
-            Path.joinpath(category_path, "books_info_.csv"),
+            Path.joinpath(category_path, f"{current_date}_category_{category_name}_book_information.csv"),
             images_path,
         )
         books_informations.clear()
