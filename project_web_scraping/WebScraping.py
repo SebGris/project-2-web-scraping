@@ -15,6 +15,7 @@ HOME_URL = "http://books.toscrape.com/"
 ### Functions
 def extract_books_from_categories(categories):
     for category_name, category_url in categories:
+        print(f"Lecture des pages de la catégorie : {category_name}")
         url_of_the_books = extract_urls_books_in_category(category_url)
         books_informations = []
         for book_url in url_of_the_books:
@@ -46,12 +47,12 @@ def export_to_csv_file(books_informations, filename, images_path):
                 f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
             )
             writer.writerow(book_informations)
-            old_name_image = Path(book_informations["image_url"]).stem
+            old_image_name = Path(book_informations["image_url"]).name
             save_image_from_url(
-                urlparse.urljoin(HOME_URL, book_informations["image_url"]),
+                book_informations["image_url"],
                 Path.joinpath(
                     images_path,
-                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}_{old_name_image}.jpg',
+                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}_{old_image_name}',
                 ),
             )
     print(f"Les données ont été écrites avec succès dans : {filename}")
@@ -72,7 +73,6 @@ def extract_urls_books_in_category(index_page_of_the_category):
         maximum_page = int(
             1 if range_page is None else range_page.text.split("of")[-1].strip()
         )
-        print(f"Nombre de pages dans la catégorie : {maximum_page}")
         for page_number in range(2, maximum_page + 1):
             url_books += extract_books_urls(
                 urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
@@ -132,7 +132,7 @@ def get_book_informations(book_page_url):
                 .find_next("p")
                 .attrs["class"][1]
             ),
-            "image_url": article_tag.img.attrs["src"],
+            "image_url": urlparse.urljoin(HOME_URL, article_tag.img.attrs["src"]),
         }
     else:
         print(f"Erreur : ce livre n'existe pas ({book_response})")
