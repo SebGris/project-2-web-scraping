@@ -14,13 +14,14 @@ HOME_URL = "http://books.toscrape.com/"
 
 ### Functions
 def extract_books_from_categories(categories):
+    project_folder_on_desktop = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
     for category_name, category_url in categories:
         print(f"Lecture des pages de la catégorie : {category_name}")
         url_of_the_books = extract_urls_books_in_category(category_url)
         books_informations = []
         for book_url in url_of_the_books:
             books_informations.append(get_book_informations(book_url))
-        category_path = Path.joinpath(project_path, category_name)
+        category_path = Path.joinpath(project_folder_on_desktop, category_name)
         category_path.mkdir(parents=True, exist_ok=True)
         images_path = Path.joinpath(category_path, "images")
         images_path.mkdir(parents=True, exist_ok=True)
@@ -29,7 +30,7 @@ def extract_books_from_categories(categories):
             books_informations,
             Path.joinpath(
                 category_path,
-                f"{current_date}_category_{category_name}_book_information.csv",
+                f"{current_date} Catégorie {category_name} Information Livres.csv",
             ),
             images_path,
         )
@@ -139,8 +140,6 @@ def get_book_informations(book_page_url):
 
 
 ### Main
-project_path = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
-
 response = requests.get(HOME_URL)
 if not (response.ok):
     print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
