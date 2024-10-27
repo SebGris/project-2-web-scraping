@@ -13,6 +13,37 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
+def extract_categories(home_url):
+    try:
+        response = requests.get(home_url)
+        if response.ok:
+            soup = BeautifulSoup(response.content, "html.parser")
+            all_navigable_categories = [
+                (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
+                for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
+                    "a", href=True
+                )
+            ]
+            all_navigable_categories.sort()
+            return {name: url for name, url in all_navigable_categories}
+    except requests.exceptions.RequestException:
+        return {}
+
+
+def display_menu(dict):
+    for key, value in dict.items():
+        print(f"{key} : {value}")
+    print("Choix des catégories à exporter.")
+
+
+def convert_numbers_to_categories(numbers, categories_dict):
+    return [
+        (key, value)
+        for key, value in categories_dict.items()
+        if key in [categories_name[key] for key in numbers]
+    ]
+
+
 def extract_books_from_categories(categories):
     project_folder_on_desktop = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
     for category_name, category_url in categories:
@@ -30,39 +61,11 @@ def extract_books_from_categories(categories):
             books_informations,
             Path.joinpath(
                 category_path,
-                f"{current_date} Catégorie {category_name} Information Livres.csv",
+                f"{current_date} Information Livres Catégorie {category_name}.csv",
             ),
             images_path,
         )
         books_informations.clear()
-
-
-def export_to_csv_file(books_informations, filename, images_path):
-    with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
-        writer = csv.DictWriter(
-            file, books_informations[0].keys(), delimiter=";", quotechar='"'
-        )
-        writer.writeheader()
-        for book_informations in books_informations:
-            print(
-                f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
-            )
-            writer.writerow(book_informations)
-            old_image_name = Path(book_informations["image_url"]).name
-            save_image_from_url(
-                book_informations["image_url"],
-                Path.joinpath(
-                    images_path,
-                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}_{old_image_name}',
-                ),
-            )
-    print(f"Les données ont été écrites avec succès dans : {filename}")
-
-
-def save_image_from_url(image_url, new_filename):
-    with open(new_filename, "wb") as handle:
-        response = requests.get(image_url)
-        handle.write(response.content)
 
 
 def extract_urls_books_in_category(index_page_of_the_category):
@@ -139,35 +142,32 @@ def extract_book_informations(book_page_url):
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
 
-def extract_categories(home_url):
-    try:
-        response = requests.get(home_url)
-        if response.ok:
-            soup = BeautifulSoup(response.content, "html.parser")
-            all_navigable_categories = [
-                (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
-                for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
-                    "a", href=True
-                )
-            ]
-            all_navigable_categories.sort()
-            return {name: url for name, url in all_navigable_categories}
-    except requests.exceptions.RequestException:
-        return {}
+def export_to_csv_file(books_informations, filename, images_path):
+    with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
+        writer = csv.DictWriter(
+            file, books_informations[0].keys(), delimiter=";", quotechar='"'
+        )
+        writer.writeheader()
+        for book_informations in books_informations:
+            print(
+                f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
+            )
+            writer.writerow(book_informations)
+            old_image_name = Path(book_informations["image_url"]).name
+            save_image_from_url(
+                book_informations["image_url"],
+                Path.joinpath(
+                    images_path,
+                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}_{old_image_name}',
+                ),
+            )
+    print(f"Les données ont été écrites avec succès dans : {filename}")
 
 
-def display_menu(dict):
-    for key, value in dict.items():
-        print(f"{key} : {value}")
-    print("Choix des catégories à exporter.")
-
-
-def convert_numbers_to_categories(numbers, categories_dict):
-    return [
-        (key, value)
-        for key, value in categories_dict.items()
-        if key in [categories_name[key] for key in numbers]
-    ]
+def save_image_from_url(image_url, new_filename):
+    with open(new_filename, "wb") as handle:
+        response = requests.get(image_url)
+        handle.write(response.content)
 
 
 ### Main
