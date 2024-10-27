@@ -20,7 +20,7 @@ def extract_books_from_categories(categories):
         url_of_the_books = extract_urls_books_in_category(category_url)
         books_informations = []
         for book_url in url_of_the_books:
-            books_informations.append(get_book_informations(book_url))
+            books_informations.append(extract_book_informations(book_url))
         category_path = Path.joinpath(project_folder_on_desktop, category_name)
         category_path.mkdir(parents=True, exist_ok=True)
         images_path = Path.joinpath(category_path, "images")
@@ -100,7 +100,7 @@ def convert_number_letters_into_number(number_letters):
     return numbers[number_letters]
 
 
-def get_book_informations(book_page_url):
+def extract_book_informations(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
         soup = BeautifulSoup(book_response.content, "html.parser")
@@ -139,43 +139,59 @@ def get_book_informations(book_page_url):
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
 
+def extract_categories(home_url):
+    try:
+        response = requests.get(home_url)
+        if response.ok:
+            soup = BeautifulSoup(response.content, "html.parser")
+            all_navigable_categories = [
+                (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
+                for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
+                    "a", href=True
+                )
+            ]
+            all_navigable_categories.sort()
+            return {name: url for name, url in all_navigable_categories}
+    except requests.exceptions.RequestException:
+        return {}
+
+
+def display_menu(dict):
+    for key, value in dict.items():
+        print(f"{key} : {value}")
+    print("Choix des catégories à exporter.")
+
+
+def convert_numbers_to_categories(numbers, categories_dict):
+    return [
+        (key, value)
+        for key, value in categories_dict.items()
+        if key in [categories_name[key] for key in numbers]
+    ]
+
+
 ### Main
-response = requests.get(HOME_URL)
-if not (response.ok):
-    print(f"Erreur : pas de réponse du site {HOME_URL} ({response})")
-    exit()
-
-soup = BeautifulSoup(response.content, "html.parser")
-all_navigable_categories = [
-    (a.text.strip(), urlparse.urljoin(HOME_URL, a["href"]))
-    for a in soup.find("ul", {"class": "nav nav-list"}).find_all("a", href=True)
-]
-all_navigable_categories.sort()
-categories_by_name = {name: url for name, url in all_navigable_categories}
-categories_by_name["Toutes les catégories"] = categories_by_name.pop("Books")
-
-
-### Build menu
-categories_menu = {
-    index: name for index, name in enumerate(categories_by_name, start=1)
-}
-for key, value in categories_menu.items():
-    print(f"{key} : {value}")
-print("Choix des catégories à exporter.")
-number_selected_categories = input(
-    "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules (entrez 0 pour quitter) : "
+name_with_url_categories = extract_categories(HOME_URL)
+if not name_with_url_categories:
+    print(f"Erreur : pas de réponse du site {HOME_URL}")
+name_with_url_categories["Toutes les catégories"] = name_with_url_categories.pop(
+    "Books"
 )
-number_selected_categories = [int(x) for x in number_selected_categories.split(",")]
-if number_selected_categories[0] == 0:
+categories_name = {
+    index: name for index, name in enumerate(name_with_url_categories, start=1)
+}
+display_menu(categories_name)
+print("Entrez 0 pour quitter.")
+numbers_selected = input(
+    "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules : "
+)
+if numbers_selected[0] == "0":
     exit()
-if number_selected_categories[0] == len(categories_menu):
-    number_selected_categories = list(range(1, len(categories_menu)))
-name_selected_categories = [categories_menu[key] for key in number_selected_categories]
-selected_categories = [
-    (key, value)
-    for key, value in categories_by_name.items()
-    if key in name_selected_categories
-]
+numbers_selected = [int(x) for x in numbers_selected.split(",")]
+if numbers_selected[0] == len(categories_name):
+    numbers_selected = list(range(1, len(categories_name)))
+selected_categories = convert_numbers_to_categories(
+    numbers_selected, name_with_url_categories
+)
 extract_books_from_categories(selected_categories)
-
 print("Fin du traitement : enregistrement des images et fichiers CSV terminé.")
