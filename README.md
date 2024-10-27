@@ -66,7 +66,7 @@ Ce programme d'extraction est un script Python, exécutable à la demande, visan
 
 ## 🧐 Exemple d'utilisation et résultat
 
-### Exemple d'utilisation
+### Exemple d'utilisation sur les catégories __Biography__ et __Business__
 
 Cet exemple montre comment importer les livres des catégories __Biography__ et __Business__.
 
