@@ -177,3 +177,5 @@ selected_categories = [
     if key in name_selected_categories
 ]
 extract_books_from_categories(selected_categories)
+
+print("Fin du traitement : enregistrement des images et fichiers CSV terminé.")
