@@ -42,7 +42,6 @@ Suiviez les 3 grandes étapes ci-dessous :
 
 >[!NOTE]
 >La commande `cd` est utilisée pour modifier le répertoire de travail actuel.
-
 >La commande `pip` demande à l'installateur de paquets pour Python d'installer les paquets listés dans le fichier requirements.txt.
 
 ## 📖 Utilisation du programme et résultat
