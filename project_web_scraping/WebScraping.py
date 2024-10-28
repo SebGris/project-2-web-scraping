@@ -51,7 +51,7 @@ def display_categories_menu():
 def convert_numbers_selected_to_categories():
     return [
         (key, value)
-        for key, value in name_with_url_categories.items()
+        for key, value in name_and_url_categories.items()
         if key in [categories_name[key] for key in numbers_selected]
     ]
 
@@ -174,18 +174,18 @@ def save_image_from_url(image_url, filename):
 
 
 ### Main
-name_with_url_categories = extract_categories(HOME_URL)
-if not name_with_url_categories:
+name_and_url_categories = extract_categories(HOME_URL)
+if not name_and_url_categories:
     print(f"Erreur : pas de réponse du site {HOME_URL}")
-name_with_url_categories["Toutes les catégories"] = name_with_url_categories.pop(
+name_and_url_categories["Toutes les catégories"] = name_and_url_categories.pop(
     "Books"
 )
 categories_name = {
-    index: name for index, name in enumerate(name_with_url_categories, start=1)
+    index: name for index, name in enumerate(name_and_url_categories, start=1)
 }
 display_categories_menu()
 numbers_selected = input("")
-if numbers_selected[0] == "0":
+if numbers_selected in ("0" ,""):
     exit()
 numbers_selected = regex.sub(r"[^0-9,]", "", numbers_selected)
 numbers_selected = [int(x) for x in numbers_selected.split(",") if x !=""]
