@@ -47,7 +47,7 @@ Ce programme d'extraction est un script Python, exécutable à la demande, visan
 >[!NOTE]
 >La commande `pip` demande à l'installateur de paquets pour Python d'installer les paquets listés dans le fichier requirements.txt.
 
-## 📖 Utilisation du programme et résultat
+## Utilisation du programme et résultat
 
 ### Comment exécuter le script Python sous Windows ?
 
