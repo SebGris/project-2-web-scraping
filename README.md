@@ -1,5 +1,5 @@
 
-![Logo Books Online](https://user.oc-static.com/upload/2020/09/22/1600779540759_Online%20bookstore-01.png)
+![Logo Books Online](<docs/logo Books Online.jpg>)
 
 Books Online
 
