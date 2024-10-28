@@ -14,7 +14,7 @@ HOME_URL = "http://books.toscrape.com/"
 
 ### Functions
 def extract_categories(home_url):
-    """Extract all categories of the site.
+    """Extract all book categories of the site.
 
     Args:
         home_url (str): The URL of the site to be analysed.
@@ -26,14 +26,14 @@ def extract_categories(home_url):
         response = requests.get(home_url)
         if response.ok:
             soup = BeautifulSoup(response.content, "html.parser")
-            all_navigable_categories = [
+            book_categories = [
                 (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
                 for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
                     "a", href=True
                 )
             ]
-            all_navigable_categories.sort()
-            return {name: url for name, url in all_navigable_categories}
+            book_categories.sort()
+            return {name: url for name, url in book_categories}
     except requests.exceptions.RequestException:
         return {}
 
@@ -60,10 +60,8 @@ def extract_books_from_categories(categories):
     for category_name, category_url in categories:
         print(f"Lecture des pages de la catégorie : {category_name}")
         url_of_books = extract_urls_books_in_category(category_url)
-        books_informations = [
-            extract_book_informations(book_url) for book_url in url_of_books
-        ]
-        export_to_csv_file(category_name, books_informations)
+        books = [extract_book_informations(url) for url in url_of_books]
+        export_to_csv_file(category_name, books)
 
 
 def extract_urls_books_in_category(index_page_of_the_category):
@@ -140,35 +138,37 @@ def extract_book_informations(book_page_url):
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
 
-def export_to_csv_file(category, books):
+def export_to_csv_file(category_name, books):
     project_folder_on_desktop = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
-    category_path = Path.joinpath(project_folder_on_desktop, category)
+    category_path = Path.joinpath(project_folder_on_desktop, category_name)
     category_path.mkdir(parents=True, exist_ok=True)
     images_path = Path.joinpath(category_path, "images")
     images_path.mkdir(parents=True, exist_ok=True)
     current_date = datetime.now().strftime("%Y-%m-%d")
     filename = Path.joinpath(
-        category_path, f"{current_date} Information Livres Catégorie {category}.csv"
+        category_path,
+        f"{current_date} Information Livres Catégorie {category_name}.csv",
     )
     with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
         writer = csv.DictWriter(file, books[0].keys(), delimiter=";", quotechar='"')
         writer.writeheader()
-        for book in books:
-            print(f'Ecriture dans le csv des informations du livre : {book["title"]}')
-            writer.writerow(book)
-            old_image_name = Path(book["image_url"]).name
+        for book_informations in books:
+            print(
+                f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
+            )
+            writer.writerow(book_informations)
             save_image_from_url(
-                book["image_url"],
+                book_informations["image_url"],
                 Path.joinpath(
                     images_path,
-                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book["title"][:100])}_{old_image_name}',
+                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}',
                 ),
             )
     print(f"Les données ont été écrites avec succès dans : {filename}")
 
 
-def save_image_from_url(image_url, new_filename):
-    with open(new_filename, "wb") as handle:
+def save_image_from_url(image_url, filename):
+    with open(filename, "wb") as handle:
         response = requests.get(image_url)
         handle.write(response.content)
 
@@ -187,7 +187,8 @@ display_categories_menu()
 numbers_selected = input("")
 if numbers_selected[0] == "0":
     exit()
-numbers_selected = [int(x) for x in numbers_selected.split(",")]
+numbers_selected = regex.sub(r"[^0-9,]", "", numbers_selected)
+numbers_selected = [int(x) for x in numbers_selected.split(",") if x !=""]
 if numbers_selected[0] == len(categories_name):
     numbers_selected = list(range(1, len(categories_name)))
 selected_categories = convert_numbers_selected_to_categories()
