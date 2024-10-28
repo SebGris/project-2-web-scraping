@@ -7,14 +7,15 @@ Books Online
 
 Ce programme d'extraction est un script Python, exécutable à la demande, visant à récupérer les prix du site [Books to Scrape](http://books.toscrape.com/) au moment de son exécution.
 
-## ❓ Caractéristiques du programme
+## Caractéristiques du programme
 
 - Récupération des prix, adresse URL et caractéristiques des livres.
 - Exportation d'une ou plusieurs catégories de livre.
 - Enregistrement des informations des livres au format CSV.
+- Date d'enregistrement du fichier CSV reprise dans le nom du fichier.
 - Enregistrement de l'image d'illustration de chaque livre au format JPG.
 
-## 🤔 Installation avec l'environnement virtuel
+## Installation avec l'environnement virtuel
 ### 1e étape : Comment créer l'environnement virtuel ?
 1. Dans l'__Explorateur de fichiers__, ouvrir votre dossier Windows "__Documents__"
 2. Dans la barre d'adresse de la fenêtre __Explorateur de fichiers__ tapez `cmd` à la place de l'adresse `C:\Users\votre_nom\Documents` puis validez par "__Entrée__"
@@ -64,7 +65,7 @@ Ce programme d'extraction est un script Python, exécutable à la demande, visan
 - Dans ce répertoire "__Books to Scrape__", on trouvera un répertoire par catégorie de livre.
 - Dans chaque répertoire "__nom_de_la_catégorie__", on trouvera un répertoire "__images__" et un fichier CSV.
 
-## 🧐 Exemple d'utilisation et résultat
+## Exemple d'utilisation et résultat
 
 ### Exemple d'utilisation sur les catégories __Biography__ et __Business__
 
@@ -103,12 +104,12 @@ Cet exemple montre comment importer les livres des catégories __Biography__ et 
 
 ![Screenshot résultat Fichier CSV ouvert dans Excel](<docs/Result/2024-10-27 16_53_32-2024-10-27 Catégorie Business Information Livres.csv - Excel.png>)
 
-## 📚 Liens utiles sur Python
+## Liens utiles sur Python
 
  - [User Guide - pip documentation - Requirements Files](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
  - [Python venv: How To Create, Activate, Deactivate, And Delete](https://python.land/virtual-environments/virtualenv#How_to_create_a_Python_venv)
 
-## 📚 Liens utiles sur GitHub
+## Liens utiles sur GitHub
 
  - [Basic writing and formatting syntax - GitHub Docs](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
  - [readme.so](https://readme.so/fr)
