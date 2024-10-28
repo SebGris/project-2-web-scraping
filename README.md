@@ -58,7 +58,7 @@ Ce programme d'extraction est un script Python, exécutable à la demande, visan
   python "Scripts Python\Virtual Environment\project-2-web-scraping-main\project_web_scraping\WebScraping.py"
 ```
 
-### Dans quels répertoires sont enregistrés les fichiers CSV et images ?
+### Dans quels répertoires sont enregistrés les fichiers CSV et les images ?
 
 - Les fichiers sont classés dans un répertoire nommé "__Books to Scrape__" créé par le script Python sur le bureau Windows.
 - Dans ce répertoire "__Books to Scrape__", on trouvera un répertoire par catégorie de livre.
