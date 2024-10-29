@@ -13,54 +13,11 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_categories(home_url):
-    """Extract all book categories of the site.
-
-    Args:
-        home_url (str): The URL of the site to be analysed.
-
-    Returns:
-        dict: Returns a dictionary containing the names of the categories and their URLs.
-    """
-    try:
-        response = requests.get(home_url)
-        if response.ok:
-            soup = BeautifulSoup(response.content, "html.parser")
-            book_categories = [
-                (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
-                for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
-                    "a", href=True
-                )
-            ]
-            book_categories.sort()
-            return {name: url for name, url in book_categories}
-    except requests.exceptions.RequestException:
-        return {}
-
-
-def display_categories_menu():
-    for key, value in categories_name.items():
-        print(f"{key} : {value}")
-    print("Choix des catégories à exporter.")
-    print("Entrez 0 pour quitter.")
-    print(
-        "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules : "
-    )
-
-
-def convert_numbers_selected_to_categories():
-    return [
-        (key, value)
-        for key, value in name_and_url_categories.items()
-        if key in [categories_name[key] for key in numbers_selected]
-    ]
-
-
 def extract_books_from_categories(categories):
     for category_name, category_url in categories:
         print(f"Lecture des pages de la catégorie : {category_name}")
         url_of_books = extract_urls_books_in_category(category_url)
-        books = [extract_book_informations(url) for url in url_of_books]
+        books = [extract_and_transform_book_informations(url) for url in url_of_books]
         export_to_csv_file(category_name, books)
 
 
@@ -94,12 +51,10 @@ def extract_books_urls(category_page_url):
         print(f"Erreur : cette page de la catégorie n'existe pas ({response})")
 
 
-def convert_number_letters_into_number(number_letters):
-    numbers = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
-    return numbers[number_letters]
-
-
-def extract_book_informations(book_page_url):
+def extract_and_transform_book_informations(book_page_url):
+    def convert_number_letters_into_number(number_letters):
+        numbers = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+        return numbers[number_letters]
     book_response = requests.get(book_page_url)
     if book_response.ok:
         soup = BeautifulSoup(book_response.content, "html.parser")
@@ -157,11 +112,12 @@ def export_to_csv_file(category_name, books):
                 f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
             )
             writer.writerow(book_informations)
+            old_image_name = Path(book_informations["image_url"]).name
             save_image_from_url(
                 book_informations["image_url"],
                 Path.joinpath(
                     images_path,
-                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:100])}',
+                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:50])} {old_image_name}',
                 ),
             )
     print(f"Les données ont été écrites avec succès dans : {filename}")
@@ -173,24 +129,56 @@ def save_image_from_url(image_url, filename):
         handle.write(response.content)
 
 
+### Functions for User Interface
+def extract_categories(home_url):
+    try:
+        response = requests.get(home_url)
+        if response.ok:
+            soup = BeautifulSoup(response.content, "html.parser")
+            book_categories = [
+                (a.text.strip(), urlparse.urljoin(home_url, a["href"]))
+                for a in soup.find("ul", {"class": "nav nav-list"}).find_all(
+                    "a", href=True
+                )
+            ]
+            book_categories.sort()
+            return {name: url for name, url in book_categories}
+    except requests.exceptions.RequestException:
+        return {}
+
+
+def display_categories_menu():
+    for key, value in categories_name_by_index.items():
+        print(f"{key} : {value}")
+    print("Choix des catégories à exporter.")
+    print("Entrez 0 pour quitter.")
+    print(
+        "Entrez un n° de catégorie, ou plusieurs n° de catégorie séparés par des virgules : "
+    )
+
+
 ### Main
 name_and_url_categories = extract_categories(HOME_URL)
 if not name_and_url_categories:
     print(f"Erreur : pas de réponse du site {HOME_URL}")
-name_and_url_categories["Toutes les catégories"] = name_and_url_categories.pop(
-    "Books"
-)
-categories_name = {
+    exit()
+name_and_url_categories["Toutes les catégories"] = name_and_url_categories.pop("Books")
+categories_name_by_index = {
     index: name for index, name in enumerate(name_and_url_categories, start=1)
 }
 display_categories_menu()
 numbers_selected = input("")
-if numbers_selected in ("0" ,""):
+if numbers_selected in ("0", ""):
     exit()
 numbers_selected = regex.sub(r"[^0-9,]", "", numbers_selected)
-numbers_selected = [int(x) for x in numbers_selected.split(",") if x !=""]
-if numbers_selected[0] == len(categories_name):
-    numbers_selected = list(range(1, len(categories_name)))
-selected_categories = convert_numbers_selected_to_categories()
+numbers_selected = [int(x) for x in numbers_selected.split(",") if x != ""]
+if numbers_selected[0] == len(categories_name_by_index):
+    numbers_selected = list(range(1, len(categories_name_by_index)))
+# convert numbers selected to categories selected
+selected_categories = [
+    (name, url)
+    for name, url in name_and_url_categories.items()
+    if name in [categories_name_by_index[number] for number in numbers_selected]
+]
 extract_books_from_categories(selected_categories)
 print("Fin du traitement : enregistrement des images et fichiers CSV terminé.")
