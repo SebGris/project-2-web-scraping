@@ -30,7 +30,7 @@ Ce programme d'extraction est un script Python, exécutable à la demande, visan
 ```bash
   "Scripts Python\Virtual Environment\Scripts\activate.bat"
 ```
-### 3e étape : Télécharger les fichiers du programme à partir de GitHub
+### 3e étape : Cloner le repository à partir de GitHub
 
 1. Cliquez sur le bouton en vert nommé "__Code__"
 2. Dans le menu déroulant, cliquez sur "__Download ZIP__"
