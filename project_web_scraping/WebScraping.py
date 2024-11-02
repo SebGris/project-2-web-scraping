@@ -13,13 +13,12 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_books_from_categories(categories):
+def extract_transform_load_books(categories):
     for category_name, category_url in categories:
         print(f"Traitement de la catégorie : {category_name}")
-        url_books = extract_urls_books_in_category(category_url)
-        books_informations = [
-            extract_and_transform_book_informations(url) for url in url_books
-        ]
+        url_books = read_urls_books_in_category(category_url)
+        books_informations = [extract_book_informations(url) for url in url_books]
+        transform_book_informations(books_informations)
         category_path, images_path = create_paths(category_name)
         current_date = datetime.now().strftime("%Y-%m-%d")
         csv_filename = Path.joinpath(
@@ -30,17 +29,17 @@ def extract_books_from_categories(categories):
         save_images(images_path, books_informations)
 
 
-def extract_urls_books_in_category(index_page_of_the_category):
+def read_urls_books_in_category(index_page_of_the_category):
     response = requests.get(index_page_of_the_category)
     if response.ok:
-        url_books = extract_books_urls(index_page_of_the_category)
+        url_books = read_books_urls(index_page_of_the_category)
         soup = BeautifulSoup(response.content, "html.parser")
         range_page = soup.find("li", {"class": "current"})
         maximum_page = int(
             1 if range_page is None else range_page.text.split("of")[-1].strip()
         )
         for page_number in range(2, maximum_page + 1):
-            url_books += extract_books_urls(
+            url_books += read_books_urls(
                 urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
             )
         return url_books
@@ -48,7 +47,7 @@ def extract_urls_books_in_category(index_page_of_the_category):
         print(f"Erreur : cette catégorie n'existe pas ({response})")
 
 
-def extract_books_urls(category_page_url):
+def read_books_urls(category_page_url):
     response = requests.get(category_page_url)
     if response.ok:
         soup = BeautifulSoup(response.content, "html.parser")
@@ -60,24 +59,14 @@ def extract_books_urls(category_page_url):
         print(f"Erreur : cette page de la catégorie n'existe pas ({response})")
 
 
-def extract_and_transform_book_informations(book_page_url):
-    def convert_number_letters_into_number(number_letters):
-        numbers = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
-        return numbers[number_letters]
-
+def extract_book_informations(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
         print(f"Lecture de la page {book_page_url}")
         soup = BeautifulSoup(book_response.content, "html.parser")
         # Gives the first article tag, the one with the comment <!-- Start of product page -->
         article_tag = soup.find("article")
-        # Check if the product description exists
         product_description = article_tag.find("div", {"id": "product_description"})
-        text_description = (
-            None
-            if product_description is None
-            else product_description.find_next("p").text
-        )
         information_rows = soup.find_all("tr")
         return {
             "product_page_url": book_response.url,
@@ -85,23 +74,40 @@ def extract_and_transform_book_informations(book_page_url):
             "title": article_tag.h1.text,
             "price_including_tax": information_rows[3].td.text,
             "price_excluding_tax": information_rows[2].td.text,
-            "number_available": regex.search(r"\d+", information_rows[5].td.text)[0],
-            "product_description": text_description,
+            "number_available": information_rows[5].td.text,
+            "product_description": None
+            if product_description is None
+            else product_description.find_next("p").text,
             "category": soup.find(
                 "ul", {"class": "breadcrumb"}
             )  # There are two ul tags
             .find_all("li")[-2]
             .find("a")
             .text,
-            "review_rating": convert_number_letters_into_number(
-                article_tag.find("p", {"class": "instock availability"})
-                .find_next("p")
-                .attrs["class"][1]
-            ),
-            "image_url": urlparse.urljoin(HOME_URL, article_tag.img.attrs["src"]),
+            "review_rating": article_tag.find("p", {"class": "instock availability"})
+            .find_next("p")
+            .attrs["class"][1],
+            "image_url": article_tag.img.attrs["src"],
         }
     else:
         print(f"Erreur : ce livre n'existe pas ({book_response})")
+
+
+def transform_book_informations(books):
+    def convert_number_letters_into_number(number_letters):
+        numbers = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+        return numbers[number_letters]
+
+    for book_informations in books:
+        book_informations["number_available"] = regex.search(
+            r"\d+", book_informations["number_available"]
+        )[0]
+        book_informations["review_rating"] = convert_number_letters_into_number(
+            book_informations["review_rating"]
+        )
+        book_informations["image_url"] = urlparse.urljoin(
+            HOME_URL, book_informations["image_url"]
+        )
 
 
 def create_paths(category_name):
@@ -188,9 +194,10 @@ if numbers_selected[0] == len(categories_name_by_index):
     numbers_selected = list(range(1, len(categories_name_by_index)))
 # convert numbers selected to categories selected
 selected_categories = [
-    (name, url)
-    for name, url in name_and_url_categories.items()
-    if name in [categories_name_by_index[number] for number in numbers_selected]
+    (category_name, url)
+    for category_name, url in name_and_url_categories.items()
+    if category_name
+    in [categories_name_by_index[number] for number in numbers_selected]
 ]
-extract_books_from_categories(selected_categories)
+extract_transform_load_books(selected_categories)
 print("Fin du traitement : enregistrement des images et des fichiers CSV terminé.")
