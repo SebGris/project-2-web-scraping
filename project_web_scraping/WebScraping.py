@@ -15,10 +15,19 @@ HOME_URL = "http://books.toscrape.com/"
 ### Functions
 def extract_books_from_categories(categories):
     for category_name, category_url in categories:
-        print(f"Lecture des pages de la catégorie : {category_name}")
-        url_of_books = extract_urls_books_in_category(category_url)
-        books = [extract_and_transform_book_informations(url) for url in url_of_books]
-        export_to_csv_file(category_name, books)
+        print(f"Traitement de la catégorie : {category_name}")
+        url_books = extract_urls_books_in_category(category_url)
+        books_informations = [
+            extract_and_transform_book_informations(url) for url in url_books
+        ]
+        category_path, images_path = create_paths(category_name)
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        csv_filename = Path.joinpath(
+            category_path,
+            f"{current_date} Information Livres Catégorie {category_name}.csv",
+        )
+        export_to_csv_file(csv_filename, books_informations)
+        save_images(images_path, books_informations)
 
 
 def extract_urls_books_in_category(index_page_of_the_category):
@@ -55,8 +64,10 @@ def extract_and_transform_book_informations(book_page_url):
     def convert_number_letters_into_number(number_letters):
         numbers = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
         return numbers[number_letters]
+
     book_response = requests.get(book_page_url)
     if book_response.ok:
+        print(f"Lecture de la page {book_page_url}")
         soup = BeautifulSoup(book_response.content, "html.parser")
         # Gives the first article tag, the one with the comment <!-- Start of product page -->
         article_tag = soup.find("article")
@@ -93,39 +104,40 @@ def extract_and_transform_book_informations(book_page_url):
         print(f"Erreur : ce livre n'existe pas ({book_response})")
 
 
-def export_to_csv_file(category_name, books):
+def create_paths(category_name):
     project_folder_on_desktop = Path.joinpath(Path.home(), "Desktop", "Books to Scrape")
     category_path = Path.joinpath(project_folder_on_desktop, category_name)
     category_path.mkdir(parents=True, exist_ok=True)
     images_path = Path.joinpath(category_path, "images")
     images_path.mkdir(parents=True, exist_ok=True)
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    filename = Path.joinpath(
-        category_path,
-        f"{current_date} Information Livres Catégorie {category_name}.csv",
-    )
+    return (category_path, images_path)
+
+
+def export_to_csv_file(filename, books):
     with open(filename, mode="w", encoding="utf-8-sig", newline="") as file:
         writer = csv.DictWriter(file, books[0].keys(), delimiter=";", quotechar='"')
         writer.writeheader()
         for book_informations in books:
-            print(
-                f'Ecriture dans le csv des informations du livre : {book_informations["title"]}'
-            )
             writer.writerow(book_informations)
-            old_image_name = Path(book_informations["image_url"]).name
-            save_image_from_url(
-                book_informations["image_url"],
-                Path.joinpath(
-                    images_path,
-                    f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:50])} {old_image_name}',
-                ),
-            )
     print(f"Les données ont été écrites avec succès dans : {filename}")
 
 
-def save_image_from_url(image_url, filename):
+def save_images(images_path, books):
+    for book_informations in books:
+        image_url = book_informations["image_url"]
+        old_image_name = Path(image_url).name
+        save_image(
+            image_url,
+            Path.joinpath(
+                images_path,
+                f'{regex.sub(r"[^a-zA-Z0-9 ]", "", book_informations["title"][:50])} {old_image_name}',
+            ),
+        )
+
+
+def save_image(url, filename):
     with open(filename, "wb") as handle:
-        response = requests.get(image_url)
+        response = requests.get(url)
         handle.write(response.content)
 
 
@@ -181,4 +193,4 @@ selected_categories = [
     if name in [categories_name_by_index[number] for number in numbers_selected]
 ]
 extract_books_from_categories(selected_categories)
-print("Fin du traitement : enregistrement des images et fichiers CSV terminé.")
+print("Fin du traitement : enregistrement des images et des fichiers CSV terminé.")
