@@ -13,52 +13,6 @@ HOME_URL = "http://books.toscrape.com/"
 
 
 ### Functions
-def extract_transform_load_books(categories):
-    for category_name, category_url in categories:
-        print(f"Traitement de la catégorie : {category_name}")
-        url_books = read_urls_books_in_category(category_url)
-        books_informations = [extract_book_informations(url) for url in url_books]
-        transform_book_informations(books_informations)
-        category_path, images_path = create_paths(category_name)
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        csv_filename = Path.joinpath(
-            category_path,
-            f"{current_date} Information Livres Catégorie {category_name}.csv",
-        )
-        export_to_csv_file(csv_filename, books_informations)
-        save_images(images_path, books_informations)
-
-
-def read_urls_books_in_category(index_page_of_the_category):
-    response = requests.get(index_page_of_the_category)
-    if response.ok:
-        url_books = read_books_urls(index_page_of_the_category)
-        soup = BeautifulSoup(response.content, "html.parser")
-        range_page = soup.find("li", {"class": "current"})
-        maximum_page = int(
-            1 if range_page is None else range_page.text.split("of")[-1].strip()
-        )
-        for page_number in range(2, maximum_page + 1):
-            url_books += read_books_urls(
-                urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
-            )
-        return url_books
-    else:
-        print(f"Erreur : cette catégorie n'existe pas ({response})")
-
-
-def read_books_urls(category_page_url):
-    response = requests.get(category_page_url)
-    if response.ok:
-        soup = BeautifulSoup(response.content, "html.parser")
-        return [
-            urlparse.urljoin(category_page_url, h3.a.get("href"))
-            for h3 in soup.find_all("h3")  # every link to the book is in an h3
-        ]
-    else:
-        print(f"Erreur : cette page de la catégorie n'existe pas ({response})")
-
-
 def extract_book_informations(book_page_url):
     book_response = requests.get(book_page_url)
     if book_response.ok:
@@ -108,6 +62,52 @@ def transform_book_informations(books):
         book_informations["image_url"] = urlparse.urljoin(
             HOME_URL, book_informations["image_url"]
         )
+
+
+def read_urls_books_in_category(index_page_of_the_category):
+    response = requests.get(index_page_of_the_category)
+    if response.ok:
+        url_books = read_books_urls(index_page_of_the_category)
+        soup = BeautifulSoup(response.content, "html.parser")
+        range_page = soup.find("li", {"class": "current"})
+        maximum_page = int(
+            1 if range_page is None else range_page.text.split("of")[-1].strip()
+        )
+        for page_number in range(2, maximum_page + 1):
+            url_books += read_books_urls(
+                urlparse.urljoin(index_page_of_the_category, f"page-{page_number}.html")
+            )
+        return url_books
+    else:
+        print(f"Erreur : cette catégorie n'existe pas ({response})")
+
+
+def read_books_urls(category_page_url):
+    response = requests.get(category_page_url)
+    if response.ok:
+        soup = BeautifulSoup(response.content, "html.parser")
+        return [
+            urlparse.urljoin(category_page_url, h3.a.get("href"))
+            for h3 in soup.find_all("h3")  # every link to the book is in an h3
+        ]
+    else:
+        print(f"Erreur : cette page de la catégorie n'existe pas ({response})")
+
+
+def extract_transform_load_books(categories):
+    for category_name, category_url in categories:
+        print(f"Traitement de la catégorie : {category_name}")
+        url_books = read_urls_books_in_category(category_url)
+        books_informations = [extract_book_informations(url) for url in url_books]
+        transform_book_informations(books_informations)
+        category_path, images_path = create_paths(category_name)
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        csv_filename = Path.joinpath(
+            category_path,
+            f"{current_date} Information Livres Catégorie {category_name}.csv",
+        )
+        export_to_csv_file(csv_filename, books_informations)
+        save_images(images_path, books_informations)
 
 
 def create_paths(category_name):
